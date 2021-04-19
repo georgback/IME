@@ -11,7 +11,9 @@ import numpy as np
 import IME as ime
 import statsmodels.stats.multitest as sts
 import glob
-
+import re
+import csv
+import scipy.stats as st
 #################################### Run analysis
 
 #variables
@@ -192,3 +194,232 @@ for kmer in kmers:
                              output_name=kmer+"_process",
                              GO_file="ATH_GO_GOSLIM_Feb18.process_slim")
 
+
+
+
+#finding natural mutatation varriants of intron motfis and compare them to the
+
+
+#preperation of SNP file for comparison
+#matrix was created with vcftools
+df_SNP=pd.read_csv("first_intron_matrix.csv",sep="\t")
+
+
+
+for col in df_SNP.columns[3:]:
+    print(col)
+    #replace homozygote with single symbol
+    hom=df_SNP.loc[:,col].apply(lambda x: x.split("/")[0]==x.split("/")[1])
+    df_SNP.loc[hom,col]=df_SNP.loc[hom,col].str.split("/").str[0]
+    df_SNP.loc[df_SNP[col]=='.', col] = df_SNP.REF[df_SNP[col]=='.']
+
+df_matrix=pd.DataFrame(np.zeros(np.shape(df_SNP)))
+
+df_matrix.iloc[:,:2]=df_SNP.iloc[:,:2]
+df_matrix.columns=df_SNP.columns
+
+for col in df_SNP.columns[3:]:
+    print(col)
+    uneq=df_SNP[col]!=df_SNP.REF
+    df_matrix.loc[uneq,col]=1
+
+#identifying allels with mutations in IME motif :
+
+#each motif: find all genes containing motif and the positions --> masks SNP files
+#find which motifs are masked --> find SNP position --> look at matrix at that position to find accession
+
+
+
+#modified to return dataframe with all genes with position of respective kmer (empty if none)
+#fastafile orientation must be consistent (all from the same strand direction)
+def find_kmer_positions_inf(k_mer,fasta_file,cutoff=3):
+
+    replace={"Y":"[CT]","R":"[AG]","S":"[GC]","W":"[AT]","N":"[ATGC]","K":"[GT]","M":"[AC]"}
+    pattern=re.compile("|".join(replace.keys()))
+
+    #df["Gene"]=pd.Series(dtype=str)
+    reverse_kmer=ime.reverse_complement(k_mer)
+    palindrome=reverse_kmer==k_mer
+
+    reverse_kmer=pattern.sub(lambda m: replace[re.escape(m.group(0))], reverse_kmer)
+    k_mer=pattern.sub(lambda m: replace[re.escape(m.group(0))], k_mer)
+
+    temp_lis=[]
+
+    with open(fasta_file) as fas:
+
+
+
+        if palindrome:
+            gene=""
+            start=0
+            end=0
+            for count,line in enumerate(fas):
+                if count%2==0:
+                    splt=line.split(":")
+                    gene=splt[0][1:]
+                    start=splt[-1].split("-")[0]
+                    end=splt[-1].split("-")[1].strip()
+                    chrom=splt[-2]
+                    continue
+                line=line[cutoff:-cutoff]
+                positions=[m.start() for m in re.finditer(k_mer,line)]
+                if len(positions)==0:
+                    positions=None
+                temp_lis.append([gene,chrom,start,end,len(line)+6,positions])
+        else:
+
+             for count,line in enumerate(fas):
+                if count%2==0:
+                    splt=line.split(":")
+                    gene=splt[0][1:]
+                    start=splt[-1].split("-")[0]
+                    end=splt[-1].split("-")[1].strip()
+                    chrom=splt[-2]
+                    continue
+                line=line[cutoff:-cutoff]
+                positions=[m.start() for m in re.finditer(k_mer,line)]
+                pos_rev=[m.start() for m in re.finditer(reverse_kmer,line)]
+                positions.extend(pos_rev)
+                positions.sort()
+                if len(positions)==0:
+                    positions=None
+                temp_lis.append([gene,chrom,start,end,len(line)+6,positions])
+    df=pd.DataFrame(temp_lis,columns=["gene","chr","start","end","length","positions"])
+    fas.close()
+    return df
+
+
+#extract the genes and the respective accessions with mutation at motif
+#inputs: summed_frq file containing the gene name, and the SNP with relative position
+#fasta, which alos contains the position of the sequence in the title at the end with :xxx-xxx
+#lastly the SNP_matrix, not as a file, cause it is large (2GB+), so reading it in evertime the function is called uses too much time
+def extract_accessions_with_motif_mutation(kmer,frq_file,fastafile,SNP_matrix):
+    kmer_inf=find_kmer_positions_inf(kmer,fastafile).dropna()
+    kmer_inf["start"]=kmer_inf["start"].astype(int)
+    kmer_inf["chr"]=kmer_inf["chr"].astype(int)
+    #the positions are always the first hit of the kmer --> all positions +6 need to be checked for mutation
+
+
+    #reading in frq and modifying to fit a proper dataframe, might be good idea to do that to all frq in the first place
+    frq_df=[]
+    with open(frq_file) as frq:
+        reader=csv.reader(frq,delimiter="\t")
+        next(reader)
+
+        for row in reader:
+            tmp=row[:3]
+            positions=[x.split(":")[0] for x in row[3:]]
+            positions=np.unique(positions)
+            tmp.append(positions)
+            frq_df.append(tmp)
+        frq.close()
+    frq_df=pd.DataFrame(frq_df)
+    frq_df.columns=["gene","strand","length","positions"]
+
+    SNPs_genes=frq_df.loc[kmer_inf.index]
+    #kmer_snps=[any(pk in f for pk in [i for i in[range(1,x+1) for x in k]]) for k,f in zip(kmer_inf.positions,SNPs_genes.positions)]
+
+    #could be done more efficient or compact, but it gets quite confusing, so "inefficient" double for loop
+    res=[]
+    rel_SNPS=[]
+    for k,f in zip(kmer_inf.positions.values,SNPs_genes.positions.values):
+        temp_truth=False
+        temp_SNPS=[]
+        for p in k:
+            p=int(p)
+            #check overlaps between kmer pos and SNPs
+            #check again if not miscalculated
+            overlap=[p+1<=int(y) <p+7 for y in f]
+
+            if any(overlap):
+                temp_truth=True
+                temp_SNPS=np.array(list(map(int,np.array(f)[overlap])))
+                break
+        res.append(temp_truth)
+        rel_SNPS.append(temp_SNPS)
+    #all genes with a mutation in
+    res=np.array(res)
+    rel_SNPS=np.array(rel_SNPS)[res]
+    kmer_inf=kmer_inf[res]
+    accessions=[]
+    for snp,cr in zip(rel_SNPS,kmer_inf.iterrows()):
+        snp=np.array(snp)
+        #print(cr[0])
+        cr=cr[1]
+        #print(np.sum(SNP_matrix.POS.isin(snp+cr.start+1)))
+
+        #note to self : not+1 !!! GFF and fasta file count differently
+        temp_slice=SNP_matrix[(SNP_matrix.CHROM==cr.chr)&(SNP_matrix.POS.isin(snp+cr.start))]
+        #print(np.sum(SNP_matrix.CHROM==cr.chr))
+        #print(np.sum(SNP_matrix.POS.isin(snp+cr.start)))]
+        accessions.append(temp_slice.columns[3:][(temp_slice.iloc[:,3:]==1).any(axis=0)])
+    return([kmer_inf.gene,accessions])
+
+
+for kmer in kmers:
+    genes=ime.find_genes_containing_kmer(kmer,"first_introns.fas")
+    genes=[x.split(".")[0] for x in genes]
+    genes=np.unique(genes)
+    with open(kmer+"_containing_introns.txt","w") as f:
+        for gene in genes:
+            f.write(gene+"\n")
+        f.close()
+
+#1001 genome project expression file
+df_expression_1001 = pd.read_csv("GSE80744_ath1001_tx_norm_2016-04-21-UQ_gNorm_normCounts_k4.tsv",sep="\t",index_col="gene_id")
+df_expression_1001 = df_expression_1001.astype(int)
+
+df_matrix.rename(columns={"#CHROM":"CHROM"},inplace=True)
+
+df_expression_1001=np.log(df_expression_1001+0.1)
+df_expression_1001.columns=[*map(lambda x: x.replace("X",""),df_expression_1001.columns)]
+
+df_expression_1001_modified=df_expression_1001.drop(df_expression_1001.columns[~np.isin(df_expression_1001.columns,df_matrix.columns)],axis=1)
+
+df_matrix_modified=df_matrix.drop(df_matrix.columns[3:][~np.isin(df_matrix.columns[3:],df_expression_1001.columns)],axis=1)
+
+pval=[]
+effect_size=[]
+all_genes=[]
+for kmer in kmers:
+    print("retriving information for "+kmer)
+    mutated=extract_accessions_with_motif_mutation(kmer,basic_frq_first,fasta_file,df_matrix_modified)
+
+    cohens=[]
+    p_values=[]
+    genes=[]
+    print("analyzing p_values and effect size")
+    for count,i in enumerate(mutated[0]):
+        if i.split(".")[0] in df_expression_1001_modified.index:
+            #choose first occurrence of gene (isoform) to be kept
+            i=i.split(".")[0]
+            if i in genes:
+                continue
+
+            mut_set=df_expression_1001_modified.loc[i.split(".")[0],mutated[1][count]]
+            norm_set=df_expression_1001_modified.drop(mutated[1][count],axis=1).loc[i.split(".")[0]]
+            p_values.append(st.ttest_ind(mut_set,norm_set)[1])
+            cohens.append(cohensD(norm_set,mut_set))
+            genes.append(i)
+        else:
+             continue
+    pval.append(p_values)
+    effect_size.append(cohens)
+    all_genes.append(genes)
+
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+
+
+figure,ax=plt.subplots()
+sns.violinplot(data=effect_size)
+plt.axhline(y = 0, color = 'black', linestyle = '--',linewidth=0.5)
+ax.set_xticklabels(kmers,fontsize=8)
+plt.ylabel("Effect Size")
+
+import statsmodels.stats.multitest as fdr
+fdr=[fdr.multipletests(x,alpha=0.05,method="fdr_bh")[0] for x in pval]
+
+[np.mean(x[y]) for x,y in zip(effect_size,fdr)]
