@@ -56,7 +56,7 @@ df_gff_reduced=df_gff_reduced.drop("Chrom",1)
 
 
 #5prime UTR
-df_5prime = pd.read_csv("/home/mpimp-golm.mpg.de/back1622/Desktop/winhome/Files_Master/TAIR10_genome/TAIR10_5_prime.gff",sep="\t",header=None)
+df_5prime = pd.read_csv("TAIR10_5_prime.gff",sep="\t",header=None)
 df_5prime[9] = df_5prime[4]-df_5prime[3]+1
 
 mRNA_modified = pd.read_csv("mRNA.gff",sep="\t",header=None)
