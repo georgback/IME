@@ -18,9 +18,8 @@ import FisherExact
 import random
 import scipy.stats as stat
 from subprocess import call
-import glob
 import os
-import statsmodels.stats.multitest as sts
+
 
 
 #extraction of from respective Sequences (i.E. introns)
