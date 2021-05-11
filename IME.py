@@ -840,17 +840,17 @@ def cohensD_go_term_random(cor_list,identifiers,genes,
             all_rand_genes.extend(indep_genes)
             D.append(d)
         run_GO_term_analysis(i.columns,all_rand_genes,"combined_genes_kmer","all_genes_as_comparison","all_kmer_vs_all_random_enrichment",output_direct=cur_dir)
-        run_GO_term_analysis(i.columns,all_rand_genes,"combined_genes_kmer","all_genes_from_random_as_comparison",kmer+"_vs_all_random_kmer_component",output_direct=cur_dir,GO_file="/home/mpimp-golm.mpg.de/back1622/tools/GOTermEnrichment/ATH_GO_GOSLIM_Feb18.component_slim")
-        run_GO_term_analysis(i.columns,all_rand_genes,"combined_genes_kmer","all_genes_from_random_as_comparison",kmer+"_vs_all_random_kmer_function",output_direct=cur_dir,GO_file="/home/mpimp-golm.mpg.de/back1622/tools/GOTermEnrichment/ATH_GO_GOSLIM_Feb18.function_slim")
-        run_GO_term_analysis(i.columns,all_rand_genes,"combined_genes_kmer","all_genes_from_random_as_comparison",kmer+"_vs_all_random_kmer_process",output_direct=cur_dir,GO_file="/home/mpimp-golm.mpg.de/back1622/tools/GOTermEnrichment/ATH_GO_GOSLIM_Feb18.process_slim")
+        run_GO_term_analysis(i.columns,all_rand_genes,"combined_genes_kmer","all_genes_from_random_as_comparison",kmer+"_vs_all_random_kmer_component",output_direct=cur_dir,GO_file="ATH_GO_GOSLIM_Feb18.component_slim")
+        run_GO_term_analysis(i.columns,all_rand_genes,"combined_genes_kmer","all_genes_from_random_as_comparison",kmer+"_vs_all_random_kmer_function",output_direct=cur_dir,GO_file="ATH_GO_GOSLIM_Feb18.function_slim")
+        run_GO_term_analysis(i.columns,all_rand_genes,"combined_genes_kmer","all_genes_from_random_as_comparison",kmer+"_vs_all_random_kmer_process",output_direct=cur_dir,GO_file="ATH_GO_GOSLIM_Feb18.process_slim")
         df_d=pd.DataFrame(D)
         df_d.to_csv(cur_dir+"/"+kmer+"_CohensD.csv",sep="\t")
 
 
 
 def compare_to_top_gene_from_list(cor_list,identifiers,genes,gene_file_compare,
-                           RNA_file="/home/mpimp-golm.mpg.de/back1622/Desktop/ExchangeMPI/AG Bioinformatics 2017/Georg/supercluster_log_base_e_quantileNorm_AGI_uniqueIDs.txt",
-                           pdf="",out_dir="/home/mpimp-golm.mpg.de/back1622/tools/GOTermEnrichment/gene_files",df_expression=None,exclude_same_genes=False):
+                           RNA_file="supercluster_log_base_e_quantileNorm_AGI_uniqueIDs.txt",
+                           pdf="",out_dir="gene_files",df_expression=None,exclude_same_genes=False):
 
     #all_kmer_genes=[]
     #all_rand_genes=[]
@@ -887,7 +887,7 @@ def compare_to_top_gene_from_list(cor_list,identifiers,genes,gene_file_compare,
 
 #more restrictive, easier to call
 def compare_to_imeter_simplyfied(kmers,df_corr,gene_file_compare,fasta,
-                                 pdf="",out_dir="/home/mpimp-golm.mpg.de/back1622/tools/GOTermEnrichment/gene_files",
+                                 pdf="",out_dir="gene_files",
                                  exclude_same_genes=False):
 
 
@@ -1001,13 +1001,13 @@ def kmer_vs_comp_kmer(kmers,df_occurence,genes,df_corr,
 
               #double ## for removing when goterm progrgam is installed
 
-            run_GO_term_analysis(i.columns,indep_corr.columns,kmer,indep_kmer+"_as_comparison",kmer+"_component",output_direct=cur_dir,GO_file="/home/mpimp-golm.mpg.de/back1622/tools/GOTermEnrichment/ATH_GO_GOSLIM_Feb18.component_slim")
-            run_GO_term_analysis(i.columns,indep_corr.columns,kmer,indep_kmer+"_as_comparison",kmer+"_function",output_direct=cur_dir,GO_file="/home/mpimp-golm.mpg.de/back1622/tools/GOTermEnrichment/ATH_GO_GOSLIM_Feb18.function_slim")
-            run_GO_term_analysis(i.columns,indep_corr.columns,kmer,indep_kmer+"_as_comparison",kmer+"_process",output_direct=cur_dir,GO_file="/home/mpimp-golm.mpg.de/back1622/tools/GOTermEnrichment/ATH_GO_GOSLIM_Feb18.process_slim")
+            run_GO_term_analysis(i.columns,indep_corr.columns,kmer,indep_kmer+"_as_comparison",kmer+"_component",output_direct=cur_dir,GO_file="ATH_GO_GOSLIM_Feb18.component_slim")
+            run_GO_term_analysis(i.columns,indep_corr.columns,kmer,indep_kmer+"_as_comparison",kmer+"_function",output_direct=cur_dir,GO_file="ATH_GO_GOSLIM_Feb18.function_slim")
+            run_GO_term_analysis(i.columns,indep_corr.columns,kmer,indep_kmer+"_as_comparison",kmer+"_process",output_direct=cur_dir,GO_file="ATH_GO_GOSLIM_Feb18.process_slim")
             all_rand_genes.extend(indep_corr.columns)
-        run_GO_term_analysis(i.columns,all_rand_genes,"combined_genes_kmer","all_genes_from_random_kmers_as_comparison",kmer+"_vs_all_random_kmer_component",output_direct=cur_dir,GO_file="/home/mpimp-golm.mpg.de/back1622/tools/GOTermEnrichment/ATH_GO_GOSLIM_Feb18.component_slim")
-        run_GO_term_analysis(i.columns,all_rand_genes,"combined_genes_kmer","all_genes_from_random_kmers_as_comparison",kmer+"_vs_all_random_kmer_function",output_direct=cur_dir,GO_file="/home/mpimp-golm.mpg.de/back1622/tools/GOTermEnrichment/ATH_GO_GOSLIM_Feb18.function_slim")
-        run_GO_term_analysis(i.columns,all_rand_genes,"combined_genes_kmer","all_genes_from_random_kmers_as_comparison",kmer+"_vs_all_random_kmer_process",output_direct=cur_dir,GO_file="/home/mpimp-golm.mpg.de/back1622/tools/GOTermEnrichment/ATH_GO_GOSLIM_Feb18.process_slim")
+        run_GO_term_analysis(i.columns,all_rand_genes,"combined_genes_kmer","all_genes_from_random_kmers_as_comparison",kmer+"_vs_all_random_kmer_component",output_direct=cur_dir,GO_file="ATH_GO_GOSLIM_Feb18.component_slim")
+        run_GO_term_analysis(i.columns,all_rand_genes,"combined_genes_kmer","all_genes_from_random_kmers_as_comparison",kmer+"_vs_all_random_kmer_function",output_direct=cur_dir,GO_file="ATH_GO_GOSLIM_Feb18.function_slim")
+        run_GO_term_analysis(i.columns,all_rand_genes,"combined_genes_kmer","all_genes_from_random_kmers_as_comparison",kmer+"_vs_all_random_kmer_process",output_direct=cur_dir,GO_file="ATH_GO_GOSLIM_Feb18.process_slim")
         df_d=pd.DataFrame(D)
         df_d["kmer"]=pos_kmer
         df_d.to_csv(cur_dir+"/"+kmer+"_CohensD.csv",sep="\t",index=False)
